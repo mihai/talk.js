@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+	<head> 
+		<title>Speech Recognition JS TEST</title>
+		<script src="js/talk.js"></script>
+		<style>#srec_hyp {margin-top: 15px}</style>
+		
+	</head>
+	<body>
+		<h1>Speech Recognition JS</h1>
+		<div>
+			<div id="test-files">
+			Test recorded RAW audio: 
+				<select id="sel-test">
+				<option value="none">Select testcase:</option>	
+				<option value="digits">numbers.raw - Digits</option>
+				<option value="digits_fsg">numbers.raw - Digits (FSG)</option>
+				<option value="turtle">goforward.raw - Turtle</option>
+				</select>
+
+			</div>
+			<hr/>
+			<div id="test-upload">
+			Upload your own RAW/WAV (16bit PCM, little-endian):
+				<select id="sel-upload">
+				<option value="wsj">Select Model:</option>	
+				<option value="digits">Digits</option>
+				<option value="digits_fsg">Digits (FSG)</option>
+				<option value="turtle">Turtle</option>
+				<option value="wsj">WSJ</option>
+				</select>
+				<select id="sel-samprate">
+				<option value="16000">Sample Rate:</option>	
+				<option value="8000">8,000 Hz</option>
+				<option value="16000">16,000 Hz</option>
+				</select>
+				<br/>
+			<input type="file" id="raw_audio" name="file" />
+			<button onclick='processing();readRawAudio();'>Decode Audio</button>
+			</div>
+
+		<div id="srec_hyp"></div>
+		<pre><div id="srec_timer"></div></pre>
+		</div>
+
+		<script>
+		var PATH = window.location.href;
+		var configDigits = {};
+		configDigits.hmmDir = PATH + "model/hmm/en/tidigits";
+		configDigits.dmp = PATH + "model/lm/en/tidigits.DMP";
+		configDigits.dic = PATH + "model/lm/en/tidigits.dic";
+		
+		var configDigitsFSG = {};
+		configDigitsFSG.hmmDir = PATH + "model/hmm/en/tidigits";
+		configDigitsFSG.dic = PATH + "model/lm/en/tidigits.dic";
+		configDigitsFSG.fsg = PATH + "model/lm/en/tidigits.fsg";
+
+		var configTurtle = {};
+		configTurtle.hmmDir = PATH + "model/hmm/en_US/hub4wsj_sc_8k";
+		configTurtle.dmp = PATH + "model/lm/en/turtle.DMP";
+		configTurtle.dic = PATH + "model/lm/en/turtle.dic";
+
+		var configWSJ = {};
+		configWSJ.hmmDir = PATH + "model/hmm/en_US/hub4wsj_sc_8k";
+		configWSJ.dmp = PATH + "model/lm/en_US/hub4.5000.DMP";
+		configWSJ.dic = PATH + "model/lm/en_US/cmu07a.dic";
+
+		var configDic = {
+			turtle: configTurtle,
+			digits: configDigits,
+			digits_fsg: configDigitsFSG,
+			wsj: configWSJ
+		};
+
+		var processing = function() {
+			document.getElementById("srec_hyp").innerHTML = "<pre>processing ... </pre>";
+			document.getElementById("srec_timer").innerHTML = "";
+		};
+		document.getElementById("sel-test").onchange = function() {
+
+			processing();
+			switch(this.value) {
+				case "digits":
+				recognizeSpeech(PATH + "test/data/numbers.raw", configDigits, true);
+				break;
+				case "digits_fsg":
+				recognizeSpeech(PATH + "test/data/numbers.raw", configDigitsFSG, true);
+				break;
+				case "turtle":
+				recognizeSpeech(PATH + "test/data/goforward.raw", configTurtle, true);
+				break;
+				default: 
+				document.getElementById("srec_hyp").innerHTML = "Select a testcase from the drop menu";
+			}
+		};
+
+		function readRawAudio() {
+
+		    var files = document.getElementById('raw_audio').files;
+		    if (!files.length) {
+		      alert('Please select a RAW/WAV audio file!');
+		      return;
+		    }
+
+		    var file = files[0];
+		    var start = 0;
+		    var stop = file.size - 1;
+
+		    var reader = new FileReader();
+
+		    // If we use onloadend, we need to check the readyState.
+		    reader.onloadend = function(evt) {
+		      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
+		      	// ---- Recognize audio using talk.js ----
+		      	var crntConfig = configDic[document.getElementById("sel-upload").value];
+		      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
+				recognizeSpeech(evt.target.result, crntConfig);
+		      }
+		    };
+
+		    var blob = file.slice(start, stop + 1);
+		    reader.readAsBinaryString(blob);
+		 }
+		</script>
+	</body>
+</html>
