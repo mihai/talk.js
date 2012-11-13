@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+	<head> 
+		<title>Speech Recognition JS TEST</title>
+		<script src="js/talk.js"></script>
+		<script	src="js/cookie.js"></script>
+		<script src="wami-recorder/recorder.js"></script>
+		<script	src="js/swfobject.js"></script>
+		<style>
+		#srec_hyp {margin-top: 15px;font-weight: bold;}
+		#model_config {margin: 15px;}
+		#srec_hyp_nbest {margin-left: 15px;}
+		</style>
+	</head>
+	<body>
+		<h1>Speech Recognition JS</h1>
+		<div>
+			<div id="test-files">
+			Test recorded RAW audio: 
+				<select id="sel-test">
+				<option value="none">Select testcase:</option>	
+				<option value="digits">numbers.raw - Digits</option>
+				<option value="digits_fsg">numbers.raw - Digits (FSG)</option>
+				<option value="turtle">goforward.raw - Turtle</option>
+				</select>
+
+			</div>
+			<hr/>
+			<div id="test-upload">
+			Upload your own RAW/WAV (16bit PCM, little-endian):
+				<select id="sel-model">
+				<option value="wsj">Select Model:</option>	
+				<option value="digits">Digits</option>
+				<option value="digits_fsg">Digits (FSG)</option>
+				<option value="turtle">Turtle</option>
+				<option value="wsj">WSJ</option>
+				</select>
+				<select id="sel-samprate">
+				<option value="16000">Sample Rate:</option>	
+				<option value="8000">8,000 Hz</option>
+				<option value="16000">16,000 Hz</option>
+				<option value="44100">44,100 Hz</option>
+				</select>
+				<br/>
+				N-best hypotheses:
+				<input type="number" id="sel-nbest"
+					min="0"
+					max="10"
+					step="1"
+					value="3">
+
+			<input type="file" id="raw_audio" name="file" />
+			<button onclick='processing();readRawAudio();'>Decode Audio</button>
+			</div>
+			<hr/>
+			<div>Live microphone input (using <a href="http://code.google.com/p/wami-recorder" target="_blank">WAMI</a>)<br/>
+				Select <i>model</i> and <i>sample rate</i> parameters from above
+				<div id='model_config'>
+					Model: <b><span id="m_conf"></span></b><br/>
+					Sample Rate: <b><span id="sr_conf"></span></b><br/>
+					Recording ID: <span id='sessionID'></span>
+			</div>
+				<button onclick='recordWAMI();' id='rec_btn'>Recode Audio</button>
+				<button onclick='stopWAMI()' id='stop_btn'>Stop</button>
+				<button onclick='stopWAMI();playWAMI();' id='play_btn'>Play | Decode</button>
+			</div>
+
+		<div id="srec_hyp"></div>
+		<div id="srec_hyp_nbest"></div>
+		<pre><div id="srec_timer"></div></pre>
+		</div>
+	
+	<div id="status"></div>
+	<div id="wami"></div>
+	<script>
+		var PATH = window.location.href.replace(/\/\w+.html/g, '/');
+		setupWAMI(); // setup WAMI
+		var sel_model = document.getElementById("sel-model");
+		var sel_samprate = document.getElementById("sel-samprate");
+		var sessionID = checkCookie();
+		document.getElementById("sr_conf").innerHTML = sel_samprate.options[2].text; // hardcoded default
+		document.getElementById("m_conf").innerHTML = sel_model.options[4].text; // hardcoded default
+		document.getElementById("sessionID").innerHTML = "<a href='rec"+sessionID+".wav'>"+sessionID+"</a>";
+
+		var configDigits = {};
+		configDigits.hmmDir = PATH + "model/hmm/en/tidigits";
+		configDigits.dmp = PATH + "model/lm/en/tidigits.DMP";
+		configDigits.dic = PATH + "model/lm/en/tidigits.dic";
+		
+		var configDigitsFSG = {};
+		configDigitsFSG.hmmDir = PATH + "model/hmm/en/tidigits";
+		configDigitsFSG.dic = PATH + "model/lm/en/tidigits.dic";
+		configDigitsFSG.fsg = PATH + "model/lm/en/tidigits.fsg";
+
+		var configTurtle = {};
+		configTurtle.hmmDir = PATH + "model/hmm/en_US/hub4wsj_sc_8k";
+		configTurtle.dmp = PATH + "model/lm/en/turtle.DMP";
+		configTurtle.dic = PATH + "model/lm/en/turtle.dic";
+
+		var configWSJ = {};
+		configWSJ.hmmDir = PATH + "model/hmm/en_US/hub4wsj_sc_8k";
+		configWSJ.dmp = PATH + "model/lm/en_US/hub4.5000.DMP";
+		configWSJ.dic = PATH + "model/lm/en_US/cmu07a.dic";
+
+		var configDic = {
+			turtle: configTurtle,
+			digits: configDigits,
+			digits_fsg: configDigitsFSG,
+			wsj: configWSJ
+		};
+		sel_model.onchange = function() {
+			var i = sel_model.selectedIndex;
+			document.getElementById("m_conf").innerHTML = sel_model.options[i].text;
+		}
+		sel_samprate.onchange = function() {
+			var i = sel_samprate.selectedIndex;
+			document.getElementById("sr_conf").innerHTML = sel_samprate.options[i].text;
+		}
+
+		var processing = function() {
+			document.getElementById("srec_hyp").innerHTML = "<pre>processing ... </pre>";
+			document.getElementById("srec_timer").innerHTML = "";
+			document.getElementById("srec_hyp_nbest").innerHTML = "";
+		};
+		document.getElementById("sel-test").onchange = function() {
+			processing();
+			configDigits.nbest = document.getElementById("sel-nbest").value;
+			configDigitsFSG.nbest = document.getElementById("sel-nbest").value;
+			configTurtle.nbest = document.getElementById("sel-nbest").value;
+			switch(this.value) {
+				case "digits":
+					recognizeSpeech(PATH + "test/data/numbers.raw", configDigits, true);
+				break;
+				case "digits_fsg":
+					recognizeSpeech(PATH + "test/data/numbers.raw", configDigitsFSG, true);
+				break;
+				case "turtle":
+					recognizeSpeech(PATH + "test/data/goforward.raw", configTurtle, true);
+				break;
+				default: 
+				document.getElementById("srec_hyp").innerHTML = "Select a testcase from the drop menu";
+			}
+		};
+
+		function readRawAudio() {
+		    var files = document.getElementById('raw_audio').files;
+		    if (!files.length) {
+		      alert('Please select a RAW/WAV audio file!');
+		      return;
+		    }
+		    var file = files[0];
+		    var start = 0;
+		    var stop = file.size - 1;
+
+		    var reader = new FileReader();
+		    // If we use onloadend, we need to check the readyState.
+		    reader.onloadend = function(evt) {
+		      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
+		      	// ---- Recognize audio using talk.js ----
+		      	var crntConfig = configDic[document.getElementById("sel-model").value];
+		      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
+		      	crntConfig.nbest = document.getElementById("sel-nbest").value;
+				recognizeSpeech(evt.target.result, crntConfig);
+		      }
+		    };
+		    var blob = file.slice(start, stop + 1);
+		    reader.readAsBinaryString(blob);
+		}
+
+		// -------------- AUDIO RECORDING -----------------
+		function recognizeFromRecording(recName) {
+			var crntConfig = configDic[document.getElementById("sel-model").value];
+	      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
+	      	crntConfig.nbest = document.getElementById("sel-nbest").value;
+			recognizeSpeech(PATH + recName, crntConfig, true);
+		}
+		// ----------------------- WAMI -------------------
+		function setupWAMI() {
+			Wami.setup({id:"wami", swfUrl:"wami-recorder/Wami.swf"});
+			document.getElementById("play_btn").disabled = true;
+		}
+		
+		function recordWAMI() {
+			status("Recording...");
+			Wami.setSettings({sampleRate: document.getElementById("sel-samprate").value});
+			Wami.startRecording("wami-recorder/record.php?name=recs/rec"+sessionID+".wav");
+		}
+
+		function playWAMI() {
+			processing();
+			var recording = "wami-recorder/recs/rec"+sessionID+".wav";
+			Wami.startPlaying(recording);
+			recognizeFromRecording(recording);
+		}
+
+		function stopWAMI() {
+			status("");
+			Wami.stopRecording();
+			Wami.stopPlaying();
+			document.getElementById("srec_hyp").innerHTML = "Recording stopped";
+			document.getElementById("srec_timer").innerHTML = "";
+			document.getElementById("srec_hyp_nbest").innerHTML = "";
+			document.getElementById("play_btn").disabled = false;
+		}
+
+		function status(msg) {
+			document.getElementById('status').innerHTML = msg;
+		}
+		</script>
+	</body>
+</html>
