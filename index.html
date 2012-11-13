@@ -3,7 +3,12 @@
 	<head> 
 		<title>Speech Recognition JS TEST</title>
 		<script src="js/talk.js"></script>
-		<style>#srec_hyp {margin-top: 15px}</style>
+		<script src="js/recorder.js"></script>
+		<style>
+		#srec_hyp {margin-top: 15px; font-weight: bold;}
+		#model_config {margin: 15px;}
+		#srec_hyp_nbest {margin-left: 15px;}
+		</style>
 		
 	</head>
 	<body>
@@ -22,7 +27,7 @@
 			<hr/>
 			<div id="test-upload">
 			Upload your own RAW/WAV (16bit PCM, little-endian):
-				<select id="sel-upload">
+				<select id="sel-model">
 				<option value="wsj">Select Model:</option>	
 				<option value="digits">Digits</option>
 				<option value="digits_fsg">Digits (FSG)</option>
@@ -35,16 +40,28 @@
 				<option value="16000">16,000 Hz</option>
 				</select>
 				<br/>
+				N-best hypotheses:
+				<input type="number" id="sel-nbest"
+					min="0"
+					max="10"
+					step="1"
+					value="3">
+
 			<input type="file" id="raw_audio" name="file" />
 			<button onclick='processing();readRawAudio();'>Decode Audio</button>
 			</div>
+			<div>
+				<button onclick='processing();recordAudio();'>Recode Audio</button>
+				<button onclick='stopRecording();'>Stop Recording</button>
+			</div>
 
 		<div id="srec_hyp"></div>
+		<div id="srec_hyp_nbest"></div>
 		<pre><div id="srec_timer"></div></pre>
 		</div>
 
 		<script>
-		var PATH = window.location.href;
+		var PATH = window.location.href.replace(/\/\w+.html/g, '/');
 		var configDigits = {};
 		configDigits.hmmDir = PATH + "model/hmm/en/tidigits";
 		configDigits.dmp = PATH + "model/lm/en/tidigits.DMP";
@@ -75,10 +92,14 @@
 		var processing = function() {
 			document.getElementById("srec_hyp").innerHTML = "<pre>processing ... </pre>";
 			document.getElementById("srec_timer").innerHTML = "";
+			document.getElementById("srec_hyp_nbest").innerHTML = "";
 		};
 		document.getElementById("sel-test").onchange = function() {
 
 			processing();
+			configDigits.nbest = document.getElementById("sel-nbest").value;
+			configDigitsFSG.nbest = document.getElementById("sel-nbest").value;
+			configTurtle.nbest = document.getElementById("sel-nbest").value;
 			switch(this.value) {
 				case "digits":
 				recognizeSpeech(PATH + "test/data/numbers.raw", configDigits, true);
@@ -112,15 +133,64 @@
 		    reader.onloadend = function(evt) {
 		      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
 		      	// ---- Recognize audio using talk.js ----
-		      	var crntConfig = configDic[document.getElementById("sel-upload").value];
+		      	var crntConfig = configDic[document.getElementById("sel-model").value];
 		      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
+		      	crntConfig.nbest = document.getElementById("sel-nbest").value;
 				recognizeSpeech(evt.target.result, crntConfig);
 		      }
 		    };
 
 		    var blob = file.slice(start, stop + 1);
 		    reader.readAsBinaryString(blob);
-		 }
+		}
+
+		// -------------- AUDIO RECORDING -----------------
+		navigator.webkitGetUserMedia({audio:true}, gotAudio);	
+		var audioRecorder;
+		
+		function gotAudio(stream) {
+			var context = new webkitAudioContext();
+			var mediaStreamSource = context.createMediaStreamSource(stream);
+			audioRecorder = new Recorder(mediaStreamSource);
+		}
+
+		function recordAudio() {
+			document.getElementById("srec_hyp").innerHTML = "<pre>recording ... </pre>";
+			audioRecorder.record();
+		}
+
+		function stopRecording() {
+			processing();
+			audioRecorder.getWAV(gotData);
+			audioRecorder.stop();
+			//audioRecorder.exportBuffer(gotData);
+		}
+
+		function gotData(blob) {
+			audioRecorder.clear();
+			//playSound(blob);
+			Recorder.downloadWAV(blob);
+			var crntConfig = configDic[document.getElementById("sel-model").value];
+		  	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
+		  	crntConfig.nbest = document.getElementById("sel-nbest").value;
+		    var reader = new FileReader();
+
+		    reader.onloadend = function(evt) {
+		      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
+				recognizeSpeech(evt.target.result, crntConfig);
+		      }
+		    };
+
+		    reader.readAsBinaryString(blob);
+
+		}
+		// ----------- PLAYING SOUND --------------
+		function playSound(buffer) {
+		  var source = context.createBufferSource(); // creates a sound source
+		  source.buffer = buffer;                    // tell the source which sound to play
+		  source.connect(context.destination);       // connect the source to the context's destination (the speakers)
+		  source.noteOn(0);                          // play the source now
+		}
 		</script>
 	</body>
 </html>
