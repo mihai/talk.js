@@ -80,7 +80,7 @@
 		var sessionID = checkCookie();
 		document.getElementById("sr_conf").innerHTML = sel_samprate.options[2].text; // hardcoded default
 		document.getElementById("m_conf").innerHTML = sel_model.options[4].text; // hardcoded default
-		document.getElementById("sessionID").innerHTML = "<a href='rec"+sessionID+".wav'>"+sessionID+"</a>";
+		document.getElementById("sessionID").innerHTML = "<a href='wami-recorder/recs/rec"+sessionID+".wav'>"+sessionID+"</a>";
 
 		var configDigits = {};
 		configDigits.hmmDir = PATH + "model/hmm/en/tidigits";
