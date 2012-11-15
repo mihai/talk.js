@@ -183,7 +183,7 @@
 		function recordWAMI() {
 			status("Recording...");
 			Wami.setSettings({sampleRate: document.getElementById("sel-samprate").value});
-			Wami.startRecording("wami-recorder/record.php?name=recs/rec"+sessionID+".wav");
+			Wami.startRecording("wami-recorder/record.php?name=recs%2Frec"+sessionID+".wav");
 		}
 
 		function playWAMI() {
