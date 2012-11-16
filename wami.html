@@ -10,7 +10,8 @@
 		#srec_hyp {margin-top: 15px;font-weight: bold;}
 		#model_config {margin: 15px;}
 		#srec_hyp_nbest {margin-left: 15px;}
-		#info-box {margin-left: 15px; width: 35%;}
+		#info-box {margin-left: 15px; width: 50%;}
+		audio {display: none; margin-top: 15px}
 		</style>
 	</head>
 	<body>
@@ -21,10 +22,10 @@
 			Language and Acoustic model parameters:<br/>
 			<select id="sel-model">
 				<option value="wsj">Select Model:</option>
-				<option value="digits">Digits</option>
-				<option value="digits_fsg">Digits (FSG)</option>
+				<option value="digits">Digits (0-9)</option>
+				<option value="digits_fsg">Digits (0-9) (using Finite State Grammars)</option>
 				<option value="turtle">Turtle</option>
-				<option value="wsj">WSJ</option>
+				<option value="wsj">Wall Street Journal</option>
 			</select>
 			<select id="sel-samprate">
 				<option value="16000">Sample Rate:</option>
@@ -58,11 +59,14 @@
 			Test recorded RAW audio: 
 				<select id="sel-test">
 				<option value="none">Select testcase:</option>	
-				<option value="digits">numbers.raw - Digits</option>
-				<option value="digits_fsg">numbers.raw - Digits (FSG)</option>
-				<option value="turtle">goforward.raw - Turtle</option>
+				<option value="digits">numbers.wav - Digits</option>
+				<option value="digits_fsg">numbers.wav - Digits (FSG)</option>
+				<option value="turtle">goforward.wav - Turtle</option>
 				</select>
-
+				<audio controls="controls" id="play-default-test" src="" type="audio/wav">
+					<embed height="50" width="100" src="">
+				</audio>
+				<div id="getsample"></div>
 			</div>
 			<hr/>
 			<div id="test-upload">
@@ -81,6 +85,9 @@
 				<button onclick='recordWAMI();' id='rec_btn'>Record Audio</button>
 				<button onclick='stopWAMI()' id='stop_btn'>Stop</button>
 				<button onclick='stopWAMI();playWAMI();' id='play_btn'>Play | Decode</button>
+				<audio controls="controls" id="play-rec" src="" type="audio/wav" autoplay>
+					<embed height="50" width="100" src="">
+				</audio>
 			</div>
 
 		<div id="srec_hyp"></div>
@@ -98,7 +105,7 @@
 		var sessionID = checkCookie();
 		document.getElementById("sr_conf").innerHTML = sel_samprate.options[2].text; // hardcoded default
 		document.getElementById("m_conf").innerHTML = sel_model.options[4].text; // hardcoded default
-		document.getElementById("sessionID").innerHTML = "<a href='wami-recorder/recs/rec"+sessionID+".wav'>"+sessionID+"</a>";
+		document.getElementById("sessionID").innerHTML = "<a href='wami-recorder/recs/rec"+sessionID+".wav' target='_blank'>"+sessionID+"</a>";
 
 		var configDigits = {};
 		configDigits.hmmDir = PATH + "model/hmm/en/tidigits";
@@ -148,6 +155,7 @@
 			document.getElementById("srec_timer").innerHTML = "";
 			document.getElementById("srec_hyp_nbest").innerHTML = "";
 		};
+
 		document.getElementById("sel-test").onchange = function() {
 			processing();
 			configDigits.nbest = document.getElementById("sel-nbest").value;
@@ -158,18 +166,30 @@
 			configTurtle.workerPath = getWorkerPath();
 			switch(this.value) {
 				case "digits":
-					recognizeSpeech(PATH + "test/data/numbers.raw", configDigits, true);
+					recognizeSpeech(PATH + "test/data/numbers.wav", configDigits, true);
+					enableAudioPlayback("play-default-test", "test/data/numbers.wav");
+					document.getElementById("getsample").innerHTML = "<a href='"+PATH+"test/data/numbers.wav' target='_blank'>numbers.wav</a>";
 				break;
 				case "digits_fsg":
-					recognizeSpeech(PATH + "test/data/numbers.raw", configDigitsFSG, true);
+					recognizeSpeech(PATH + "test/data/numbers.wav", configDigitsFSG, true);
+					document.getElementById("getsample").innerHTML = "<a href='"+PATH+"test/data/numbers.wav' target='_blank'>numbers.wav</a>";
+					enableAudioPlayback("play-default-test", "test/data/numbers.wav");
 				break;
 				case "turtle":
-					recognizeSpeech(PATH + "test/data/goforward.raw", configTurtle, true);
+					recognizeSpeech(PATH + "test/data/goforward.wav", configTurtle, true);
+					document.getElementById("getsample").innerHTML = "<a href='"+PATH+"test/data/goforward.wav' target='_blank'>goforward.wav</a>";
+					enableAudioPlayback("play-default-test", "test/data/goforward.wav");
 				break;
 				default: 
 				document.getElementById("srec_hyp").innerHTML = "Select a testcase from the drop menu";
 			}
 		};
+		function enableAudioPlayback(audioID, audioSRC) {
+			var audioObj = document.getElementById(audioID);
+			audioObj.src = audioSRC;
+			audioObj.children[0].src = audioSRC; // fallback if no HTML5
+			audioObj.style.display = "block";
+		}
 
 		function readRawAudio() {
 		    var files = document.getElementById('raw_audio').files;
@@ -220,7 +240,8 @@
 		function playWAMI() {
 			processing();
 			var recording = "wami-recorder/recs/rec"+sessionID+".wav";
-			Wami.startPlaying(recording);
+			//Wami.startPlaying(recording);
+			enableAudioPlayback("play-rec", recording+"?");
 			recognizeFromRecording(recording);
 		}
 
