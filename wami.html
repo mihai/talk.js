@@ -10,11 +10,50 @@
 		#srec_hyp {margin-top: 15px;font-weight: bold;}
 		#model_config {margin: 15px;}
 		#srec_hyp_nbest {margin-left: 15px;}
+		#info-box {margin-left: 15px; width: 35%;}
 		</style>
 	</head>
 	<body>
 		<h1>Speech Recognition JS</h1>
-		<div>
+		<h2>Configuration</h2>
+		<div id="info-box">
+			<div>
+			Language and Acoustic model parameters:<br/>
+			<select id="sel-model">
+				<option value="wsj">Select Model:</option>
+				<option value="digits">Digits</option>
+				<option value="digits_fsg">Digits (FSG)</option>
+				<option value="turtle">Turtle</option>
+				<option value="wsj">WSJ</option>
+			</select>
+			<select id="sel-samprate">
+				<option value="16000">Sample Rate:</option>
+				<option value="8000">8,000 Hz</option>
+				<option value="16000">16,000 Hz</option>
+				<option value="44100">44,100 Hz</option>
+			</select>
+			</div>
+			<hr/>
+			<div>
+			N-best hypotheses:
+			<input type="number" id="sel-nbest"
+				min="0"
+				max="10"
+				step="1"
+				value="3">
+			</div>
+			<hr/>
+			<div>
+				Select decoding process method:<br/>
+				<input type="radio" name="decoder-process" value="js/talkWorker.js" id="talkworker1" checked>
+				<label for="talkworker1">web worker</label>
+				<br/>
+				<input type="radio" name="decoder-process" value="js/talkWorker-new.js" id="talkworker2">
+				<label for="talkworker2">web worker (new emcc)</label>
+			</div>
+		</div>
+		<h2>Tests</h2>
+		<div id="info-box">
 			<div id="test-files">
 			Test recorded RAW audio: 
 				<select id="sel-test">
@@ -27,34 +66,13 @@
 			</div>
 			<hr/>
 			<div id="test-upload">
-			Upload your own RAW/WAV (16bit PCM, little-endian):
-				<select id="sel-model">
-				<option value="wsj">Select Model:</option>	
-				<option value="digits">Digits</option>
-				<option value="digits_fsg">Digits (FSG)</option>
-				<option value="turtle">Turtle</option>
-				<option value="wsj">WSJ</option>
-				</select>
-				<select id="sel-samprate">
-				<option value="16000">Sample Rate:</option>	
-				<option value="8000">8,000 Hz</option>
-				<option value="16000">16,000 Hz</option>
-				<option value="44100">44,100 Hz</option>
-				</select>
-				<br/>
-				N-best hypotheses:
-				<input type="number" id="sel-nbest"
-					min="0"
-					max="10"
-					step="1"
-					value="3">
-
+			Upload your own RAW/WAV (16bit PCM, little-endian), select corresponding <i>sample rate</i> in <b>Configuration</b> and click <em>Decode Audio</em>:<br/>
 			<input type="file" id="raw_audio" name="file" />
 			<button onclick='processing();readRawAudio();'>Decode Audio</button>
 			</div>
 			<hr/>
 			<div>Live microphone input (using <a href="http://code.google.com/p/wami-recorder" target="_blank">WAMI</a>)<br/>
-				Select <i>model</i> and <i>sample rate</i> parameters from above
+				Select <i>model</i> and <i>sample rate</i> parameters from <b>Configuration</b>, click <em>Record Audio</em>, speak, (<em>Stop</em> -- optional) and <em>Play | Decode</em>
 				<div id='model_config'>
 					Model: <b><span id="m_conf"></span></b><br/>
 					Sample Rate: <b><span id="sr_conf"></span></b><br/>
@@ -116,7 +134,15 @@
 			var i = sel_samprate.selectedIndex;
 			document.getElementById("sr_conf").innerHTML = sel_samprate.options[i].text;
 		}
-
+		var getWorkerPath = function() {
+			var decoderProcGroup = document.getElementsByName("decoder-process");
+			for (var i = 0; i < decoderProcGroup.length; i++) {
+				if(decoderProcGroup.item(i).checked) {
+					return decoderProcGroup.item(i).value;
+				}
+			}
+			return null;
+		};
 		var processing = function() {
 			document.getElementById("srec_hyp").innerHTML = "<pre>processing ... </pre>";
 			document.getElementById("srec_timer").innerHTML = "";
@@ -125,8 +151,11 @@
 		document.getElementById("sel-test").onchange = function() {
 			processing();
 			configDigits.nbest = document.getElementById("sel-nbest").value;
+			configDigits.workerPath = getWorkerPath();
 			configDigitsFSG.nbest = document.getElementById("sel-nbest").value;
+			configDigitsFSG.workerPath = getWorkerPath();
 			configTurtle.nbest = document.getElementById("sel-nbest").value;
+			configTurtle.workerPath = getWorkerPath();
 			switch(this.value) {
 				case "digits":
 					recognizeSpeech(PATH + "test/data/numbers.raw", configDigits, true);
@@ -160,6 +189,7 @@
 		      	var crntConfig = configDic[document.getElementById("sel-model").value];
 		      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
 		      	crntConfig.nbest = document.getElementById("sel-nbest").value;
+				crntConfig.workerPath = getWorkerPath();
 				recognizeSpeech(evt.target.result, crntConfig);
 		      }
 		    };
@@ -172,6 +202,7 @@
 			var crntConfig = configDic[document.getElementById("sel-model").value];
 	      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
 	      	crntConfig.nbest = document.getElementById("sel-nbest").value;
+			crntConfig.workerPath = getWorkerPath();
 			recognizeSpeech(PATH + recName, crntConfig, true);
 		}
 		// ----------------------- WAMI -------------------

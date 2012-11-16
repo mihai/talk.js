@@ -3,11 +3,6 @@
 //					engine to JavaScript, using Emscripten.
 // Author: Mihai Cirlanaru (Mozilla 2012)
 
-// Labels for parsing the speech recognition decoding result
-// TODO: find a more generic way to set them up
-var recognizedLabel = "RECOGNIZED";
-var nbestLabel = "BEST";
-
 self.onmessage = function(e) {
 	postMessage({debug:"worker received message "+e.data.command});
 	switch(e.data.command) {

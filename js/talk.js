@@ -30,8 +30,9 @@ function recognizeSpeech(audioFile, config, isURL) {
     Module["audio_url"] = audioFile;
   }
 
-  var WORKER_PATH = "js/talkWorker.js"; // default worker path
-  var worker = new Worker(config.workerPath || WORKER_PATH);
+  var WORKER_PATH = config.workerPath || "js/talkWorker.js"; // default worker path
+  var worker = new Worker(WORKER_PATH);
+  console.log("INFO: Using web worker from " + WORKER_PATH);
 
   worker.onmessage = function(e) {
     if (e.data.error) {
