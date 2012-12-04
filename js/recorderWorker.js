@@ -1,4 +1,5 @@
-var recLength = 0, recBuffers = [], sampleRate;
+var recLength = 0, recBuffers = [], fromSampleRate;
+importScripts("resampler.js");
 
 this.onmessage = function(e){
   switch(e.data.command){
@@ -9,7 +10,7 @@ this.onmessage = function(e){
       record(e.data.buffer);
       break;
     case 'getWAV':
-      getWAV(e.data.type);
+      getWAV(e.data.type, e.data.toSampleRate);
       break;
     case 'clear':
       clear();
@@ -21,7 +22,7 @@ this.onmessage = function(e){
 };
 
 function init(config){
-  sampleRate = config.sampleRate;
+  fromSampleRate = config.fromSampleRate;
 }
 
 function record(inputBuffer){
@@ -32,9 +33,18 @@ function record(inputBuffer){
   recLength += interleaved.length;
 }
 
-function getWAV(type){
+function getWAV(type, toSampleRate){
   var buffer = mergeBuffers(recBuffers, recLength);
-  var dataview = encodeWAV(buffer);
+  // Resample --------------
+  if (typeof toSampleRate != "undefined") {
+    var bufferSize = Math.ceil(recLength * toSampleRate/fromSampleRate);
+    var resamplerControl = new Resampler(fromSampleRate, toSampleRate, 2, bufferSize, true);
+    var resampleLength = resamplerControl.resampler(buffer);
+    var resampledBuffer = resamplerControl.outputBuffer;
+    buffer = resampledBuffer;
+  }
+  // -----------------------
+  var dataview = encodeWAV(buffer, toSampleRate);
   var audioBlob = new Blob([dataview], { type: type });
 
   this.postMessage(audioBlob);
@@ -87,9 +97,12 @@ function writeString(view, offset, string){
   }
 }
 
-function encodeWAV(samples){
+function encodeWAV(samples, sampleRate){
   var buffer = new ArrayBuffer(44 + samples.length * 2);
   var view = new DataView(buffer);
+  if (typeof sampleRate === "undefined") {
+    sampleRate = fromSampleRate;
+  }
   // ------------------- WAV header ------------------
   // RIFF identifier
   writeString(view, 0, 'RIFF');

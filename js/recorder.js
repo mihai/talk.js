@@ -11,7 +11,7 @@
     worker.postMessage({
       command: 'init',
       config: {
-        sampleRate: this.context.sampleRate
+        fromSampleRate: this.context.sampleRate
       }
     });
     var recording = false,
@@ -48,13 +48,14 @@
       worker.postMessage({ command: 'clear' });
     }
 
-    this.getWAV = function(cb, type) {
+    this.getWAV = function(cb, type, sampleRate) {
       currCallback = cb || config.callback;
       type = type || config.type || 'audio/wav';
       if (!currCallback) throw new Error('Callback not set');
       worker.postMessage({
         command: 'getWAV',
-        type: type
+        type: type,
+        toSampleRate: sampleRate
       });
     }
 
