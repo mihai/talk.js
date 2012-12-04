@@ -73,6 +73,9 @@
 			Upload your own RAW/WAV (16bit PCM, little-endian), select corresponding <i>sample rate</i> in <b>Configuration</b> and click <em>Decode Audio</em>:<br/>
 			<input type="file" id="raw_audio" name="file" />
 			<button onclick='processing();readRawAudio();'>Decode Audio</button>
+			<audio controls="controls" id="play-upload" src="" type="audio/wav" autoplay>
+				<embed height="50" width="100" src="">
+			</audio>
 			</div>
 			<hr/>
 			<div>Live microphone input (using <a href="http://code.google.com/p/wami-recorder" target="_blank">WAMI</a>)<br/>
@@ -214,6 +217,9 @@
 		      }
 		    };
 		    var blob = file.slice(start, stop + 1);
+		    // Play uploaded audio
+			var url = (window.URL || window.webkitURL).createObjectURL(blob);
+			enableAudioPlayback("play-upload", url);
 		    reader.readAsBinaryString(blob);
 		}
 
