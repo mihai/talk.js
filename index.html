@@ -5,18 +5,13 @@
 		<script src="js/resampler.js"></script>
 		<script src="js/talk.js"></script>
 		<script src="js/recorder.js"></script>
-		<style>
-		#srec_hyp {margin-top: 15px; font-weight: bold;}
-		#model_config {margin: 15px;}
-		#srec_hyp_nbest {margin-left: 15px;}
-		audio {display: none; margin-top: 15px}
-		</style>
-		
+		<link rel="stylesheet" href="css/style.css">
 	</head>
 	<body>
 		<h1>Speech Recognition JS</h1>
-		<div>
-			<h2>Configuration</h2>
+		<p id="info-box">This demo uses <a href="http://updates.html5rocks.com/2012/09/Live-Web-Audio-Input-Enabled">webRTC getUserMedia API</a> for live microphone input. For the <a href="http://code.google.com/p/wami-recorder" target="_blank">WAMI</a> (Flash plugin required) version check the demo <a href="wami.html">here</a> (works in all browsers)</p>
+		<h2>Configuration</h2>
+		<div id="info-box">
 			<select id="sel-model">
 				<option value="wsj">Select Model:</option>	
 				<option value="digits">Digits</option>
@@ -37,8 +32,9 @@
 				max="10"
 				step="1"
 				value="3">
-
+			</div>
 			<h2>Testing</h2>
+			<div id="info-box">
 			<div id="test-files">
 			Test recorded RAW audio:
 				<select id="sel-test">
