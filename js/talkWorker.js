@@ -9,7 +9,7 @@ var recognizedLabel = "RECOGNIZED";
 var nbestLabel = "BEST";
 
 self.onmessage = function(e) {
-	postMessage({debug:"worker received message "+e.data.command});
+	postMessage({debug:"talkWorker received message "+e.data.command});
 	switch(e.data.command) {
 		case 'decodeSpeech':
 			decodeSpeech(e.data.config, onDecode);
@@ -66,7 +66,8 @@ var onDecode = function(Module, debug, cblk) {
 	}
 
 	var args = "-infile recording.raw -mdef mdef -tmat tmat -mean means -sendump sendump -featparams feat.params -var variances -dict model.dic " + LMarg + " -samprate " + Module["samprate"] + " -nbest " + Module["nbest"];
-
+	//args += " -nfft 2048";
+	//console.log(args);
 	Module["arguments"] = args.split(" ");
 
 	var recognizedLabel = "RECOGNIZED";
