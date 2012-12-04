@@ -58,6 +58,6 @@ function recognizeSpeech(audioFile, config, isURL) {
     }
   };
 
-  worker.postMessage({command: "decodeSpeech", config: {module: Module, debug: false} });
+  worker.postMessage({command: "decodeSpeech", config: {module: Module, debug: true} });
 
 }
