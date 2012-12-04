@@ -2,57 +2,81 @@
 <html>
 	<head> 
 		<title>Speech Recognition JS using WebAudio</title>
+		<script src="js/resampler.js"></script>
 		<script src="js/talk.js"></script>
 		<script src="js/recorder.js"></script>
 		<style>
 		#srec_hyp {margin-top: 15px; font-weight: bold;}
 		#model_config {margin: 15px;}
 		#srec_hyp_nbest {margin-left: 15px;}
+		audio {display: none; margin-top: 15px}
 		</style>
 		
 	</head>
 	<body>
 		<h1>Speech Recognition JS</h1>
 		<div>
-			<div id="test-files">
-			Test recorded RAW audio: 
-				<select id="sel-test">
-				<option value="none">Select testcase:</option>	
-				<option value="digits">numbers.raw - Digits</option>
-				<option value="digits_fsg">numbers.raw - Digits (FSG)</option>
-				<option value="turtle">goforward.raw - Turtle</option>
-				</select>
-
-			</div>
-			<hr/>
-			<div id="test-upload">
-			Upload your own RAW/WAV (16bit PCM, little-endian):
-				<select id="sel-model">
+			<h2>Configuration</h2>
+			<select id="sel-model">
 				<option value="wsj">Select Model:</option>	
 				<option value="digits">Digits</option>
 				<option value="digits_fsg">Digits (FSG)</option>
 				<option value="turtle">Turtle</option>
 				<option value="wsj">WSJ</option>
-				</select>
-				<select id="sel-samprate">
+			</select>
+			<select id="sel-samprate">
 				<option value="16000">Sample Rate:</option>	
 				<option value="8000">8,000 Hz</option>
 				<option value="16000">16,000 Hz</option>
-				</select>
-				<br/>
-				N-best hypotheses:
-				<input type="number" id="sel-nbest"
-					min="0"
-					max="10"
-					step="1"
-					value="3">
+				<option value="44100">44,100 Hz</option>
+			</select>
+			<br/>
+			N-best hypotheses:
+			<input type="number" id="sel-nbest"
+				min="0"
+				max="10"
+				step="1"
+				value="3">
+
+			<h2>Testing</h2>
+			<div id="test-files">
+			Test recorded RAW audio:
+				<select id="sel-test">
+					<option value="none">Select testcase:</option>
+					<option value="digits">numbers.raw - Digits</option>
+					<option value="digits_fsg">numbers.raw - Digits (FSG)</option>
+					<option value="turtle">goforward.raw - Turtle</option>
+				</select><br/>
+				<audio controls="controls" id="play-default-test" src="" type="audio/wav">
+					<embed height="50" width="100" src="">
+				</audio>
+
+			</div>
+			<hr/>
+			<div id="test-upload">
+			Upload your own RAW/WAV (16bit PCM, little-endian):
 
 			<input type="file" id="raw_audio" name="file" />
 			<button onclick='processing();readRawAudio();'>Decode Audio</button>
+			<audio controls="controls" id="play-upload" src="" type="audio/wav" autoplay>
+				<embed height="50" width="100" src="">
+			</audio>
+			</div>
+			<hr/>
+				<div>Live microphone input (using WebRTC) -- enable <b>Web Audio Input</b> in chrome://flags <br/>
+				Select <i>model</i> from <b>Configuration</b> (<i>sample rate</i> is set by AudioContext object), click <em>Record Audio</em>, speak, and <em>Stop | Decode</em>
+				<div id='model_config'>
+					Model: <b><span id="m_conf"></span></b><br/>
+					Sample Rate: <b><span id="sr_conf"></span></b></br>
+					<span id='download_rec'></span>
+				</div>
 			</div>
 			<div>
 				<button onclick='processing();recordAudio();'>Record Audio</button>
 				<button onclick='stopRecording();'>Stop | Decode</button>
+				<audio controls="controls" id="play-rec" src="" type="audio/wav" autoplay>
+					<embed height="50" width="100" src="">
+				</audio>
 			</div>
 
 		<div id="srec_hyp"></div>
@@ -60,8 +84,14 @@
 		<pre><div id="srec_timer"></div></pre>
 		</div>
 
+		<div id="status"></div>
+
 		<script>
 		var PATH = window.location.href.replace(/\/\w+.html/g, '/');
+		var sel_model = document.getElementById("sel-model");
+		var sel_samprate = document.getElementById("sel-samprate");
+		document.getElementById("sr_conf").innerHTML = sel_samprate.options[2].text; // hardcoded default
+		document.getElementById("m_conf").innerHTML = sel_model.options[4].text; // hardcoded default
 		var configDigits = {};
 		configDigits.hmmDir = PATH + "model/hmm/en/tidigits";
 		configDigits.dmp = PATH + "model/lm/en/tidigits.DMP";
@@ -89,6 +119,15 @@
 			wsj: configWSJ
 		};
 
+		sel_model.onchange = function() {
+			var i = sel_model.selectedIndex;
+			document.getElementById("m_conf").innerHTML = sel_model.options[i].text;
+		}
+		sel_samprate.onchange = function() {
+			var i = sel_samprate.selectedIndex;
+			document.getElementById("sr_conf").innerHTML = sel_samprate.options[i].text;
+		}
+
 		var processing = function() {
 			document.getElementById("srec_hyp").innerHTML = "<pre>processing ... </pre>";
 			document.getElementById("srec_timer").innerHTML = "";
@@ -103,17 +142,31 @@
 			switch(this.value) {
 				case "digits":
 				recognizeSpeech(PATH + "test/data/numbers.raw", configDigits, true);
+				enableAudioPlayback("play-default-test", "test/data/numbers.wav");
 				break;
 				case "digits_fsg":
 				recognizeSpeech(PATH + "test/data/numbers.raw", configDigitsFSG, true);
+				enableAudioPlayback("play-default-test", "test/data/numbers.wav");
 				break;
 				case "turtle":
 				recognizeSpeech(PATH + "test/data/goforward.raw", configTurtle, true);
+				enableAudioPlayback("play-default-test", "test/data/goforward.wav");
 				break;
 				default: 
 				document.getElementById("srec_hyp").innerHTML = "Select a testcase from the drop menu";
 			}
 		};
+		function enableAudioPlayback(audioID, audioSRC) {
+			var audioObj = document.getElementById(audioID);
+			audioObj.src = audioSRC;
+			audioObj.children[0].src = audioSRC; // fallback if no HTML5
+			audioObj.style.display = "block";
+			// enable download
+			var downloadLink = document.getElementById("download_rec");
+			downloadLink.innerHTML = "Download decoded <a href='"+audioSRC+"' download='audio.wav'>audio.wav</a>";
+
+
+		}
 
 		function readRawAudio() {
 
@@ -141,38 +194,61 @@
 		    };
 
 		    var blob = file.slice(start, stop + 1);
+		    // Play uploaded audio
+			var url = (window.URL || window.webkitURL).createObjectURL(blob);
+			enableAudioPlayback("play-upload", url);
+
 		    reader.readAsBinaryString(blob);
 		}
 
 		// -------------- AUDIO RECORDING -----------------
-		navigator.webkitGetUserMedia({audio:true}, gotAudio);	
 		var audioRecorder;
-		
+		var context;
+		// Check for webRTC compatibility
+		try {
+			window.AudioContext = window.AudioContext || window.webkitAudioContext;
+			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
+			context = new AudioContext();
+			navigator.getUserMedia({audio:true}, gotAudio);
+		} catch(e) {
+		   alert('Web Audio API is not supported in this browser');
+		}
+
 		function gotAudio(stream) {
-			var context = new webkitAudioContext();
 			var mediaStreamSource = context.createMediaStreamSource(stream);
 			audioRecorder = new Recorder(mediaStreamSource);
 		}
 
 		function recordAudio() {
-			document.getElementById("srec_hyp").innerHTML = "<pre>recording ... </pre>";
+			document.getElementById("srec_hyp").innerHTML = "<pre>Recording ... </pre>";
 			audioRecorder.record();
 		}
 
 		function stopRecording() {
 			processing();
-			audioRecorder.getWAV(gotData);
+			var toSampleRate = document.getElementById("sel-samprate").value;
+			audioRecorder.getWAV(gotWAVData, 'audio/wav', toSampleRate);
+			//audioRecorder.getWAV(gotWAVData);
+			//audioRecorder.getBuffer(gotData);
 			audioRecorder.stop();
-			//audioRecorder.exportBuffer(gotData);
+		}
+		function resampleAudio(buffer, fromSampleRate, toSampleRate) {
+			var bufferSize = Math.ceil(buffer.length * toSampleRate/fromSampleRate);
+			var resamplerControl = new Resampler(fromSampleRate, toSampleRate, 2, bufferSize, true);
+			var resampleLength = resamplerControl.resampler(buffer);
+			return resamplerControl.outputBuffer;
 		}
 
-		function gotData(blob) {
+		function gotWAVData(blob) {
 			audioRecorder.clear();
-			//playSound(blob);
-			Recorder.downloadWAV(blob);
+
+			// Play audio recording
+			var url = (window.URL || window.webkitURL).createObjectURL(blob);
+			enableAudioPlayback("play-rec", url);
+
 			var crntConfig = configDic[document.getElementById("sel-model").value];
-		  	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
-		  	crntConfig.nbest = document.getElementById("sel-nbest").value;
+			crntConfig.sampleRate = document.getElementById("sel-samprate").value;
+			crntConfig.nbest = document.getElementById("sel-nbest").value;
 		    var reader = new FileReader();
 
 		    reader.onloadend = function(evt) {
@@ -180,16 +256,88 @@
 				recognizeSpeech(evt.target.result, crntConfig);
 		      }
 		    };
-
+		    //Recorder.downloadWAV(blob);
 		    reader.readAsBinaryString(blob);
 
 		}
-		// ----------- PLAYING SOUND --------------
-		function playSound(buffer) {
-		  var source = context.createBufferSource(); // creates a sound source
-		  source.buffer = buffer;                    // tell the source which sound to play
-		  source.connect(context.destination);       // connect the source to the context's destination (the speakers)
-		  source.noteOn(0);                          // play the source now
+
+		function gotData(blob) {
+			audioRecorder.clear();
+			// Resample buffer -------------------------------------
+			var origSampleRate = context.sampleRate;
+			var toSampleRate = document.getElementById("sel-samprate").value;
+			var resampledBuffer = resampleAudio(blob, origSampleRate, toSampleRate);
+			var dataview = encodeWAV(resampledBuffer, toSampleRate);
+			var audioBlob = new Blob([dataview], { type: 'audio/wav' });
+			blob = audioBlob;
+			console.log("[RESAMPLING] From "+origSampleRate+"Hz to "+toSampleRate+"Hz");
+			// -----------------------------------------------------
+
+			// Play audio recording
+			var url = (window.URL || window.webkitURL).createObjectURL(blob);
+			enableAudioPlayback("play-rec", url);
+
+			var crntConfig = configDic[document.getElementById("sel-model").value];
+			crntConfig.sampleRate = toSampleRate;
+			crntConfig.nbest = document.getElementById("sel-nbest").value;
+		    var reader = new FileReader();
+
+		    reader.onloadend = function(evt) {
+		      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
+				recognizeSpeech(evt.target.result, crntConfig);
+		      }
+		    };
+		    Recorder.downloadWAV(blob);
+		    reader.readAsBinaryString(blob);
+
+		}
+
+		function encodeWAV(samples, sampleRate){
+		  var buffer = new ArrayBuffer(44 + samples.length * 2);
+		  var view = new DataView(buffer);
+		  // ------------------- WAV header ------------------
+		  // RIFF identifier
+		  writeString(view, 0, 'RIFF');
+		  // file length
+		  view.setUint32(4, 32 + samples.length * 2, true);
+		  // RIFF type
+		  writeString(view, 8, 'WAVE');
+		  // format chunk identifier
+		  writeString(view, 12, 'fmt ');
+		  // format chunk length
+		  view.setUint32(16, 16, true);
+		  // sample format (raw)
+		  view.setUint16(20, 1, true);
+		  // channel count
+		  view.setUint16(22, 2, true);
+		  // sample rate
+		  view.setUint32(24, sampleRate, true);
+		  // byte rate (sample rate * block align)
+		  view.setUint32(28, sampleRate * 4, true);
+		  // block align (channel count * bytes per sample)
+		  view.setUint16(32, 4, true);
+		  // bits per sample
+		  view.setUint16(34, 16, true);
+		  // data chunk identifier
+		  writeString(view, 36, 'data');
+		  // data chunk length
+		  view.setUint32(40, samples.length * 2, true);
+
+		  floatTo16BitPCM(view, 44, samples);
+		  return view;
+		}
+
+		function floatTo16BitPCM(output, offset, input){
+		  for (var i = 0; i < input.length; i++, offset+=2){
+		    var s = Math.max(-1, Math.min(1, input[i]));
+		    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+		  }
+		}
+
+		function writeString(view, offset, string){
+		  for (var i = 0; i < string.length; i++){
+		    view.setUint8(offset + i, string.charCodeAt(i));
+		  }
 		}
 		</script>
 	</body>
