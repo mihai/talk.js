@@ -5,7 +5,7 @@
 		<script src="js/resampler.js"></script>
 		<script src="js/talk.js"></script>
 		<script src="js/recorder.js"></script>
-		<link rel="stylesheet" href="css/style.css">
+		<link rel="stylesheet" type="text/css" href="css/style.css"/>
 	</head>
 	<body>
 		<h1>Speech Recognition JS</h1>
@@ -23,7 +23,6 @@
 				<option value="16000">Sample Rate:</option>	
 				<option value="8000">8,000 Hz</option>
 				<option value="16000">16,000 Hz</option>
-				<option value="44100">44,100 Hz</option>
 			</select>
 			<br/>
 			N-best hypotheses:
@@ -129,8 +128,8 @@
 			document.getElementById("srec_timer").innerHTML = "";
 			document.getElementById("srec_hyp_nbest").innerHTML = "";
 		};
-		document.getElementById("sel-test").onchange = function() {
 
+		document.getElementById("sel-test").onchange = function() {
 			processing();
 			configDigits.nbest = document.getElementById("sel-nbest").value;
 			configDigitsFSG.nbest = document.getElementById("sel-nbest").value;
@@ -152,6 +151,7 @@
 				document.getElementById("srec_hyp").innerHTML = "Select a testcase from the drop menu";
 			}
 		};
+
 		function enableAudioPlayback(audioID, audioSRC) {
 			var audioObj = document.getElementById(audioID);
 			audioObj.src = audioSRC;
@@ -160,12 +160,9 @@
 			// enable download
 			var downloadLink = document.getElementById("download_rec");
 			downloadLink.innerHTML = "Download decoded <a href='"+audioSRC+"' download='audio.wav'>audio.wav</a>";
-
-
 		}
 
 		function readRawAudio() {
-
 		    var files = document.getElementById('raw_audio').files;
 		    if (!files.length) {
 		      alert('Please select a RAW/WAV audio file!');
@@ -212,7 +209,8 @@
 
 		function gotAudio(stream) {
 			var mediaStreamSource = context.createMediaStreamSource(stream);
-			audioRecorder = new Recorder(mediaStreamSource);
+			// Record only MONO since PocketSphinx decoder doesn't parse stereo very well
+			audioRecorder = new Recorder(mediaStreamSource, {channelCount: 1});
 		}
 
 		function recordAudio() {
@@ -237,7 +235,6 @@
 
 		function gotWAVData(blob) {
 			audioRecorder.clear();
-
 			// Play audio recording
 			var url = (window.URL || window.webkitURL).createObjectURL(blob);
 			enableAudioPlayback("play-rec", url);
@@ -256,7 +253,7 @@
 		    reader.readAsBinaryString(blob);
 
 		}
-
+		// Callback function for getBuffer from recorder.js
 		function gotData(blob) {
 			audioRecorder.clear();
 			// Resample buffer -------------------------------------
@@ -286,54 +283,6 @@
 		    Recorder.downloadWAV(blob);
 		    reader.readAsBinaryString(blob);
 
-		}
-
-		function encodeWAV(samples, sampleRate){
-		  var buffer = new ArrayBuffer(44 + samples.length * 2);
-		  var view = new DataView(buffer);
-		  // ------------------- WAV header ------------------
-		  // RIFF identifier
-		  writeString(view, 0, 'RIFF');
-		  // file length
-		  view.setUint32(4, 32 + samples.length * 2, true);
-		  // RIFF type
-		  writeString(view, 8, 'WAVE');
-		  // format chunk identifier
-		  writeString(view, 12, 'fmt ');
-		  // format chunk length
-		  view.setUint32(16, 16, true);
-		  // sample format (raw)
-		  view.setUint16(20, 1, true);
-		  // channel count
-		  view.setUint16(22, 2, true);
-		  // sample rate
-		  view.setUint32(24, sampleRate, true);
-		  // byte rate (sample rate * block align)
-		  view.setUint32(28, sampleRate * 4, true);
-		  // block align (channel count * bytes per sample)
-		  view.setUint16(32, 4, true);
-		  // bits per sample
-		  view.setUint16(34, 16, true);
-		  // data chunk identifier
-		  writeString(view, 36, 'data');
-		  // data chunk length
-		  view.setUint32(40, samples.length * 2, true);
-
-		  floatTo16BitPCM(view, 44, samples);
-		  return view;
-		}
-
-		function floatTo16BitPCM(output, offset, input){
-		  for (var i = 0; i < input.length; i++, offset+=2){
-		    var s = Math.max(-1, Math.min(1, input[i]));
-		    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-		  }
-		}
-
-		function writeString(view, offset, string){
-		  for (var i = 0; i < string.length; i++){
-		    view.setUint8(offset + i, string.charCodeAt(i));
-		  }
 		}
 		</script>
 	</body>
