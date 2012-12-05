@@ -11,7 +11,8 @@
     worker.postMessage({
       command: 'init',
       config: {
-        fromSampleRate: this.context.sampleRate
+        fromSampleRate: this.context.sampleRate,
+        channelCount: cfg.channelCount
       }
     });
     var recording = false,

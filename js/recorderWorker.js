@@ -1,4 +1,4 @@
-var recLength = 0, recBuffers = [], fromSampleRate;
+var recLength = 0, recBuffers = [], fromSampleRate, channelCount = 1;
 importScripts("resampler.js");
 
 this.onmessage = function(e){
@@ -23,12 +23,19 @@ this.onmessage = function(e){
 
 function init(config){
   fromSampleRate = config.fromSampleRate;
+  channelCount = config.channelCount;
 }
 
 function record(inputBuffer){
   var bufferL = inputBuffer[0];
   var bufferR = inputBuffer[1];
-  var interleaved = interleave(bufferL, bufferR);
+  var interleaved;
+  // check if stereo or mono
+  if (channelCount === 2) {
+    interleaved = interleave(bufferL, bufferR);
+  } else {
+    interleaved = inputBuffer[0];
+  }
   recBuffers.push(interleaved);
   recLength += interleaved.length;
 }
@@ -38,7 +45,7 @@ function getWAV(type, toSampleRate){
   // Resample --------------
   if (typeof toSampleRate != "undefined") {
     var bufferSize = Math.ceil(recLength * toSampleRate/fromSampleRate);
-    var resamplerControl = new Resampler(fromSampleRate, toSampleRate, 2, bufferSize, true);
+    var resamplerControl = new Resampler(fromSampleRate, toSampleRate, channelCount, bufferSize, true);
     var resampleLength = resamplerControl.resampler(buffer);
     var resampledBuffer = resamplerControl.outputBuffer;
     buffer = resampledBuffer;
@@ -117,13 +124,13 @@ function encodeWAV(samples, sampleRate){
   // sample format (raw)
   view.setUint16(20, 1, true);
   // channel count
-  view.setUint16(22, 2, true);
+  view.setUint16(22, 1, true);
   // sample rate
   view.setUint32(24, sampleRate, true);
   // byte rate (sample rate * block align)
   view.setUint32(28, sampleRate * 4, true);
   // block align (channel count * bytes per sample)
-  view.setUint16(32, 4, true);
+  view.setUint16(32, channelCount * 2, true);
   // bits per sample
   view.setUint16(34, 16, true);
   // data chunk identifier
