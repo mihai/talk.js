@@ -37,15 +37,6 @@
 				step="1"
 				value="3">
 			</div>
-			<hr/>
-			<div>
-				Select decoding process method:<br/>
-				<input type="radio" name="decoder-process" value="js/talkWorker.js" id="talkworker1" checked>
-				<label for="talkworker1">web worker</label>
-				<br/>
-				<input type="radio" name="decoder-process" value="js/talkWorker-new.js" id="talkworker2">
-				<label for="talkworker2">web worker (new emcc)</label>
-			</div>
 		</div>
 		<h2>Tests</h2>
 		<div id="info-box">
@@ -138,15 +129,6 @@
 			var i = sel_samprate.selectedIndex;
 			document.getElementById("sr_conf").innerHTML = sel_samprate.options[i].text;
 		}
-		var getWorkerPath = function() {
-			var decoderProcGroup = document.getElementsByName("decoder-process");
-			for (var i = 0; i < decoderProcGroup.length; i++) {
-				if(decoderProcGroup.item(i).checked) {
-					return decoderProcGroup.item(i).value;
-				}
-			}
-			return null;
-		};
 		var processing = function() {
 			document.getElementById("srec_hyp").innerHTML = "<pre>processing ... </pre>";
 			document.getElementById("srec_timer").innerHTML = "";
@@ -173,11 +155,8 @@
 		document.getElementById("sel-test").onchange = function() {
 			processing();
 			configDigits.nbest = document.getElementById("sel-nbest").value;
-			configDigits.workerPath = getWorkerPath();
 			configDigitsFSG.nbest = document.getElementById("sel-nbest").value;
-			configDigitsFSG.workerPath = getWorkerPath();
 			configTurtle.nbest = document.getElementById("sel-nbest").value;
-			configTurtle.workerPath = getWorkerPath();
 			switch(this.value) {
 				case "digits":
 					recognizeSpeech(PATH + "test/data/numbers.wav", configDigits, showDecodingResult, true);
@@ -223,7 +202,6 @@
 		      	var crntConfig = configDic[document.getElementById("sel-model").value];
 		      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
 		      	crntConfig.nbest = document.getElementById("sel-nbest").value;
-				crntConfig.workerPath = getWorkerPath();
 				recognizeSpeech(evt.target.result, crntConfig, showDecodingResult);
 		      }
 		    };
@@ -239,7 +217,6 @@
 			var crntConfig = configDic[document.getElementById("sel-model").value];
 	      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
 	      	crntConfig.nbest = document.getElementById("sel-nbest").value;
-			crntConfig.workerPath = getWorkerPath();
 			recognizeSpeech(PATH + recName, crntConfig, showDecodingResult, true);
 		}
 		// ----------------------- WAMI -------------------
