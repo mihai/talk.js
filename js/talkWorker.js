@@ -1,7 +1,11 @@
-// talkWorker.js -- JavaScript Speech Recognition Engine worker script
-//            		Port of PocketSphinx 0.7 light-weight speech recognition 
-//					engine to JavaScript, using Emscripten.
-// Author: Mihai Cirlanaru (Mozilla 2012)
+/**
+ * talkWorker.js -- JavaScript Speech Recognition Engine worker script
+ *
+ * Port of PocketSphinx 0.7 light-weight speech recognition
+ * engine to JavaScript, using Emscripten.
+ *
+ * @author: Mihai Cirlanaru (Mozilla 2012)
+ */
 
 // Labels for parsing the speech recognition decoding result
 // TODO: find a more generic way to set them up
@@ -23,20 +27,18 @@ self.onmessage = function(e) {
 function decodeSpeech(config, onDecode) {
 	onDecode(config.module, config.debug, postMessage);
 }
-
 var onDecode = function(Module, debug, cblk) {
 	var result = {
 		hypothesis: "&laquo;unknown&raquo;",
 		nbest: [],
-		timer: "no data" 
 	};
 	var console = {};
 	if (debug) {
-		console.log = function(text) { postMessage({debug:text}); };
+		console.log = function(text) { cblk({debug:text}); };
 	} else {
 		console.log = function(text) {};
 	}
-  	// ----------------------- Compiled PocketSphinx 0.7 JS ---------------------
+	// Prerun - loading of models
 	Module["preRun"] = (function() {
 	  if (typeof Module["audio_url"] === "string") {
 	    FS.createPreloadedFile("/", "recording.raw", Module["audio_url"], true, false);
@@ -76,11 +78,11 @@ var onDecode = function(Module, debug, cblk) {
 
 	Module["return"] = "";
 
-	srecRegExp = new RegExp("\\[" + recognizedLabel + "\\]: (.*)", "g");
+	srecRegExp = new RegExp("\\[" + recognizedLabel + "\\]: (.*)");
 
 	srecNRegExp = new RegExp("\\[" + nbestLabel + "\\]: (.*)");
 
-	timerRegExp = /.*\[TIMER \w\] (.*)/g;
+	timerRegExp = /.*\[TIMER \w\] (.*)/;
 
 	Module["print"] = (function(text) {
 	  Module["return"] += text + "\n";
@@ -92,12 +94,17 @@ var onDecode = function(Module, debug, cblk) {
 	  } else if (text.match(srecNRegExp)) {
 	    result.nbest.push(srecNRegExp.exec(text)[1]);
 	  } else if (text.match(timerRegExp)) {
-	    result.timer=timerRegExp.exec(text)[1];
-	    result.debug=result.timer;
+	    result.timer={};
+	    //"Speech: 4.01 CPU: 0.000 Recognize: 0.076 x RT"
+	    var temp=timerRegExp.exec(text)[1].split(" ");
+	    result.timer.recLength=new Number(temp[1]);
+	    result.timer.cpu=new Number(temp[3]);
+	    result.timer.rt=new Number(temp[5]);
+	    result.debug=timerRegExp.exec(text)[1];
 	    cblk(result);
 	  }
 	});
-
+	// ----------------------- Compiled PocketSphinx 0.7 JS ---------------------
 	try {
 	  this["Module"] = Module;
 	} catch (e) {
