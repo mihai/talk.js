@@ -153,6 +153,23 @@
 			document.getElementById("srec_hyp_nbest").innerHTML = "";
 		};
 
+		var showDecodingResult = function(talkResult) {
+			// Get hypothesis
+			if (talkResult.hypothesis) {
+				document.getElementById("srec_hyp").innerHTML=talkResult.convertDigits();
+			}
+			// Get N-best hypotheses
+			if (talkResult.nbest) {
+				for (var i = 0; i < talkResult.nbest.length; i++) {
+				  document.getElementById("srec_hyp_nbest").innerHTML += talkResult.nbest[i] + "<br/>";
+				};
+			}
+			// Get timer output
+			if (talkResult.timer) {
+				document.getElementById("srec_timer").innerHTML="TIME: "+ talkResult.timer.toString();
+			}
+		};
+
 		document.getElementById("sel-test").onchange = function() {
 			processing();
 			configDigits.nbest = document.getElementById("sel-nbest").value;
@@ -163,17 +180,17 @@
 			configTurtle.workerPath = getWorkerPath();
 			switch(this.value) {
 				case "digits":
-					recognizeSpeech(PATH + "test/data/numbers.wav", configDigits, true);
+					recognizeSpeech(PATH + "test/data/numbers.wav", configDigits, showDecodingResult, true);
 					enableAudioPlayback("play-default-test", "test/data/numbers.wav");
 					document.getElementById("getsample").innerHTML = "<a href='"+PATH+"test/data/numbers.wav' target='_blank'>numbers.wav</a>";
 				break;
 				case "digits_fsg":
-					recognizeSpeech(PATH + "test/data/numbers.wav", configDigitsFSG, true);
+					recognizeSpeech(PATH + "test/data/numbers.wav", configDigitsFSG, showDecodingResult, true);
 					document.getElementById("getsample").innerHTML = "<a href='"+PATH+"test/data/numbers.wav' target='_blank'>numbers.wav</a>";
 					enableAudioPlayback("play-default-test", "test/data/numbers.wav");
 				break;
 				case "turtle":
-					recognizeSpeech(PATH + "test/data/goforward.wav", configTurtle, true);
+					recognizeSpeech(PATH + "test/data/goforward.wav", configTurtle, showDecodingResult, true);
 					document.getElementById("getsample").innerHTML = "<a href='"+PATH+"test/data/goforward.wav' target='_blank'>goforward.wav</a>";
 					enableAudioPlayback("play-default-test", "test/data/goforward.wav");
 				break;
@@ -207,7 +224,7 @@
 		      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
 		      	crntConfig.nbest = document.getElementById("sel-nbest").value;
 				crntConfig.workerPath = getWorkerPath();
-				recognizeSpeech(evt.target.result, crntConfig);
+				recognizeSpeech(evt.target.result, crntConfig, showDecodingResult);
 		      }
 		    };
 		    var blob = file.slice(start, stop + 1);
@@ -223,7 +240,7 @@
 	      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
 	      	crntConfig.nbest = document.getElementById("sel-nbest").value;
 			crntConfig.workerPath = getWorkerPath();
-			recognizeSpeech(PATH + recName, crntConfig, true);
+			recognizeSpeech(PATH + recName, crntConfig, showDecodingResult, true);
 		}
 		// ----------------------- WAMI -------------------
 		function setupWAMI() {

@@ -129,6 +129,23 @@
 			document.getElementById("srec_hyp_nbest").innerHTML = "";
 		};
 
+		var showDecodingResult = function(talkResult) {
+			// Get hypothesis
+			if (talkResult.hypothesis) {
+				document.getElementById("srec_hyp").innerHTML=talkResult.convertDigits();
+			}
+			// Get N-best hypotheses
+			if (talkResult.nbest) {
+			for (var i = 0; i < talkResult.nbest.length; i++) {
+			  document.getElementById("srec_hyp_nbest").innerHTML += talkResult.nbest[i] + "<br/>";
+			};
+			}
+			// Get timer output
+			if (talkResult.timer) {
+			document.getElementById("srec_timer").innerHTML="TIME: "+ talkResult.timer.toString();
+			}
+		};
+
 		document.getElementById("sel-test").onchange = function() {
 			processing();
 			configDigits.nbest = document.getElementById("sel-nbest").value;
@@ -136,15 +153,15 @@
 			configTurtle.nbest = document.getElementById("sel-nbest").value;
 			switch(this.value) {
 				case "digits":
-				recognizeSpeech(PATH + "test/data/numbers.raw", configDigits, true);
+				recognizeSpeech(PATH + "test/data/numbers.raw", configDigits, showDecodingResult, true);
 				enableAudioPlayback("play-default-test", "test/data/numbers.wav");
 				break;
 				case "digits_fsg":
-				recognizeSpeech(PATH + "test/data/numbers.raw", configDigitsFSG, true);
+				recognizeSpeech(PATH + "test/data/numbers.raw", configDigitsFSG, showDecodingResult, true);
 				enableAudioPlayback("play-default-test", "test/data/numbers.wav");
 				break;
 				case "turtle":
-				recognizeSpeech(PATH + "test/data/goforward.raw", configTurtle, true);
+				recognizeSpeech(PATH + "test/data/goforward.raw", configTurtle, showDecodingResult, true);
 				enableAudioPlayback("play-default-test", "test/data/goforward.wav");
 				break;
 				default: 
@@ -182,7 +199,7 @@
 		      	var crntConfig = configDic[document.getElementById("sel-model").value];
 		      	crntConfig.sampleRate = document.getElementById("sel-samprate").value;
 		      	crntConfig.nbest = document.getElementById("sel-nbest").value;
-				recognizeSpeech(evt.target.result, crntConfig);
+				recognizeSpeech(evt.target.result, crntConfig, showDecodingResult);
 		      }
 		    };
 
@@ -246,7 +263,7 @@
 
 		    reader.onloadend = function(evt) {
 		      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
-				recognizeSpeech(evt.target.result, crntConfig);
+				recognizeSpeech(evt.target.result, crntConfig, showDecodingResult);
 		      }
 		    };
 		    //Recorder.downloadWAV(blob);
@@ -277,7 +294,7 @@
 
 		    reader.onloadend = function(evt) {
 		      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
-				recognizeSpeech(evt.target.result, crntConfig);
+				recognizeSpeech(evt.target.result, crntConfig, showDecodingResult);
 		      }
 		    };
 		    Recorder.downloadWAV(blob);
