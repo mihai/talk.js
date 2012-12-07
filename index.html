@@ -9,9 +9,10 @@
 	</head>
 	<body>
 		<h1>Speech Recognition JS</h1>
-		<p id="info-box">This demo uses <a href="http://updates.html5rocks.com/2012/09/Live-Web-Audio-Input-Enabled">webRTC getUserMedia API</a> for live microphone input. For the <a href="http://code.google.com/p/wami-recorder" target="_blank">WAMI</a> (Flash plugin required) version check the demo <a href="wami.html">here</a> (works in all browsers)</p>
+		<p id="info-box">This demo uses <a href="http://updates.html5rocks.com/2012/09/Live-Web-Audio-Input-Enabled">WebRTC getUserMedia API</a> for live microphone input. For the <a href="http://code.google.com/p/wami-recorder" target="_blank">WAMI</a> (Flash plugin required) version check the demo <a href="wami.html">here</a> (works in all browsers)</p>
 		<h2>Configuration</h2>
 		<div id="info-box">
+			Language and Acoustic model parameters:<br/>
 			<select id="sel-model">
 				<option value="wsj">Select Model:</option>	
 				<option value="digits">Digits</option>
@@ -25,6 +26,7 @@
 				<option value="16000">16,000 Hz</option>
 			</select>
 			<br/>
+			<hr/>
 			N-best hypotheses:
 			<input type="number" id="sel-nbest"
 				min="0"
@@ -49,7 +51,7 @@
 			</div>
 			<hr/>
 			<div id="test-upload">
-			Upload your own RAW/WAV (16bit PCM, little-endian):
+			Upload your own RAW/WAV (16bit PCM, little-endian), select corresponding <i>sample rate</i> (only 8kHz and 16kHz recordings supported due to the restrictions of the acoustic model) from <b>Configuration</b> and click <em>Decode Audio</em>:<br/>
 
 			<input type="file" id="raw_audio" name="file" />
 			<button onclick='processing();readRawAudio();'>Decode Audio</button>

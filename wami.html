@@ -55,7 +55,7 @@
 			</div>
 			<hr/>
 			<div id="test-upload">
-			Upload your own RAW/WAV (16bit PCM, little-endian), select corresponding <i>sample rate</i> in <b>Configuration</b> and click <em>Decode Audio</em>:<br/>
+			Upload your own RAW/WAV (16bit PCM, little-endian), select corresponding <i>sample rate</i> (only 8kHz and 16kHz recordings supported due to the restrictions of the acoustic model) from <b>Configuration</b> and click <em>Decode Audio</em>:<br/>
 			<input type="file" id="raw_audio" name="file" />
 			<button onclick='processing();readRawAudio();'>Decode Audio</button>
 			<audio controls="controls" id="play-upload" src="" type="audio/wav" autoplay>
