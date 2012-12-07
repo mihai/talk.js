@@ -78,7 +78,7 @@ function recognizeSpeech(audioFile, config, onResult, isURL) {
     Module["audio_url"] = audioFile;
   }
   // Initialize worker for speech decoding
-  var WORKER_PATH = config.workerPath || "js/talkWorker.js"; // default worker path
+  var WORKER_PATH = config.workerPath || "js/talkWorker.min.js"; // default worker path
   var worker = new Worker(WORKER_PATH);
   console.log("INFO: Using web worker from " + WORKER_PATH);
 
