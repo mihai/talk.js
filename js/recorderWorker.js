@@ -45,7 +45,8 @@ function getWAV(type, toSampleRate){
   // Resample --------------
   if (typeof toSampleRate != "undefined") {
     var bufferSize = Math.ceil(recLength * toSampleRate/fromSampleRate);
-    var resamplerControl = new Resampler(fromSampleRate, toSampleRate, channelCount, bufferSize, true);
+    var resamplerControl = new Resampler(
+        fromSampleRate, toSampleRate, channelCount, bufferSize, true);
     var resampleLength = resamplerControl.resampler(buffer);
     var resampledBuffer = resamplerControl.outputBuffer;
     buffer = resampledBuffer;

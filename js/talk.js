@@ -19,7 +19,8 @@ var digits = {
  * Speech recognition result structure
  * @param {String} hyp best found decoding, known as hypothesis
  * @param {Array} nbest array containing the N-best hypotheses
- * @param {Object} timer object containing the performance timer data (rec length, CPU and decoding time)
+ * @param {Object} timer object containing the performance timer data
+ *        (rec length, CPU and decoding time)
  */
 function TalkResult(hyp, nbest, timer){
   this.hypothesis = hyp;
@@ -29,7 +30,8 @@ function TalkResult(hyp, nbest, timer){
                  rt: timer.rt || 0.0};
   /* Output timer information in oneliner String format */
   this.timer.toString = function() {
-    return "Speech: "+timer.recLength+"s CPU: "+timer.cpu+"s Decoding: "+timer.rt+" x RT";
+    return "Speech: " + timer.recLength + "s CPU: " + timer.cpu
+            + "s Decoding: "+timer.rt+" x RT";
   };
   /* Convert all digits */
   this.convertDigits = function() {
@@ -45,14 +47,17 @@ function TalkResult(hyp, nbest, timer){
  /**
   * Interface for decoding a wav/raw audio file using the config
   * @param {String} audioFile URL to or byte array of a wav/raw audio file
-  * @param {Object} config configuration regarding language/acoustic model locations
-  * @param {callback} onResult callback for getting a TalkResult decoding result obj
+  * @param {Object} config configuration regarding language/acoustic
+  *        model locations
+  * @param {callback} onResult callback for getting a TalkResult decoding
+           result object
   * @param {Boolean} isURL variable for specifying if the audioFile is a URL
   */
 function recognizeSpeech(audioFile, config, onResult, isURL) {
-  if ( !(config.hasOwnProperty('hmmDir') && (config.hasOwnProperty('dmp') || config.hasOwnProperty('fsg'))
+  if ( !(config.hasOwnProperty('hmmDir')
+      && (config.hasOwnProperty('dmp') || config.hasOwnProperty('fsg'))
       && config.hasOwnProperty('dic')) ) {
-    console.log("ERROR: config misses attributes (hmmDir, dmp, or dic)");
+    console.error("ERROR: config misses attributes (hmmDir, dmp, or dic)");
     alert("ERROR: Wrong acoustic/language models configuration for decoder!");
     return -1;
   }
@@ -78,13 +83,13 @@ function recognizeSpeech(audioFile, config, onResult, isURL) {
     Module["audio_url"] = audioFile;
   }
   // Initialize worker for speech decoding
-  var WORKER_PATH = config.workerPath || "js/talkWorker.min.js"; // default worker path
+  var WORKER_PATH = config.workerPath || "js/talkWorker.min.js";
   var worker = new Worker(WORKER_PATH);
   console.log("INFO: Using web worker from " + WORKER_PATH);
 
   worker.onmessage = function(e) {
     if (e.data.error) {
-      document.getElementById("srec_hyp").innerHTML=e.data.error; 
+      document.getElementById("srec_hyp").innerHTML = e.data.error;
       onResult(e.data.error);
     } else {
       if(e.data.debug) {
@@ -99,5 +104,7 @@ function recognizeSpeech(audioFile, config, onResult, isURL) {
     } //end if error
   };
 
-  worker.postMessage({command: "decodeSpeech", config: {module: Module, debug: false} });
+  worker.postMessage({ command: "decodeSpeech",
+                       config: { module: Module, debug: false }
+                     });
 }
