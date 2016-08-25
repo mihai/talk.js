@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-	<head> 
+	<head>
 		<title>Speech Recognition JS using WebAudio</title>
 		<script src="js/resampler.js"></script>
 		<script src="js/talk.js"></script>
@@ -14,14 +14,14 @@
 		<div id="info-box">
 			Language and Acoustic model parameters:<br/>
 			<select id="sel-model">
-				<option value="wsj">Select Model:</option>	
+				<option value="wsj">Select Model:</option>
 				<option value="digits">Digits</option>
 				<option value="digits_fsg">Digits (FSG)</option>
 				<option value="turtle">Turtle</option>
 				<option value="wsj">WSJ</option>
 			</select>
 			<select id="sel-samprate">
-				<option value="16000">Sample Rate:</option>	
+				<option value="16000">Sample Rate:</option>
 				<option value="8000">8,000 Hz</option>
 				<option value="16000">16,000 Hz</option>
 			</select>
@@ -93,7 +93,7 @@
 		configDigits.hmmDir = PATH + "model/hmm/en/tidigits";
 		configDigits.dmp = PATH + "model/lm/en/tidigits.DMP";
 		configDigits.dic = PATH + "model/lm/en/tidigits.dic";
-		
+
 		var configDigitsFSG = {};
 		configDigitsFSG.hmmDir = PATH + "model/hmm/en/tidigits";
 		configDigitsFSG.dic = PATH + "model/lm/en/tidigits.dic";
@@ -166,7 +166,7 @@
 				recognizeSpeech(PATH + "test/data/goforward.raw", configTurtle, showDecodingResult, true);
 				enableAudioPlayback("play-default-test", "test/data/goforward.wav");
 				break;
-				default: 
+				default:
 				document.getElementById("srec_hyp").innerHTML = "Select a testcase from the drop menu";
 			}
 		};
@@ -215,21 +215,20 @@
 
 		// -------------- AUDIO RECORDING -----------------
 		var audioRecorder;
+    var audioStreamPromise;
 		var context;
 		// Check for webRTC compatibility
 		try {
 			window.AudioContext = window.AudioContext || window.webkitAudioContext;
-			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
 			context = new AudioContext();
-			navigator.getUserMedia({audio:true}, gotAudio);
+			navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream) {
+        console.log('GOT STREAM');
+        var mediaStreamSource = context.createMediaStreamSource(stream);
+        // Record only MONO since PocketSphinx decoder doesn't parse stereo very well
+        audioRecorder = new Recorder(mediaStreamSource, {channelCount: 1});
+      });
 		} catch(e) {
 		   alert('Web Audio API is not supported in this browser');
-		}
-
-		function gotAudio(stream) {
-			var mediaStreamSource = context.createMediaStreamSource(stream);
-			// Record only MONO since PocketSphinx decoder doesn't parse stereo very well
-			audioRecorder = new Recorder(mediaStreamSource, {channelCount: 1});
 		}
 
 		function recordAudio() {
